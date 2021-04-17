@@ -1,0 +1,88 @@
+2021-04-16 11:42:27.287 EDT [60871] LOG:  starting PostgreSQL 13.2 on x86_64-apple-darwin18.7.0, compiled by Apple clang version 11.0.0 (clang-1100.0.33.17), 64-bit
+2021-04-16 11:42:27.290 EDT [60871] LOG:  listening on IPv6 address "::1", port 5432
+2021-04-16 11:42:27.290 EDT [60871] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2021-04-16 11:42:27.290 EDT [60871] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2021-04-16 11:42:27.294 EDT [60872] LOG:  database system was shut down at 2021-04-16 11:41:55 EDT
+2021-04-16 11:42:27.297 EDT [60871] LOG:  database system is ready to accept connections
+2021-04-16 11:42:37.349 EDT [60882] FATAL:  database "vivekgopalan" does not exist
+2021-04-16 11:42:43.794 EDT [60884] FATAL:  role "pgdata" does not exist
+2021-04-16 11:42:49.310 EDT [60886] FATAL:  database "pgdata" does not exist
+2021-04-16 11:44:24.994 EDT [60906] FATAL:  database "vivekgopalan" does not exist
+2021-04-16 13:15:38.769 EDT [61507] FATAL:  database "vivekgopalan" does not exist
+2021-04-16 13:15:52.133 EDT [61512] FATAL:  database "pgmint" does not exist
+2021-04-16 13:15:55.939 EDT [61513] FATAL:  database "pgmint" does not exist
+2021-04-16 13:21:41.494 EDT [61590] FATAL:  role "postgres" does not exist
+2021-04-16 13:21:45.531 EDT [61592] FATAL:  database "pgmint" does not exist
+2021-04-16 13:28:54.500 EDT [61829] FATAL:  role "postgres" does not exist
+2021-04-16 13:29:28.263 EDT [61848] FATAL:  role "postgres" does not exist
+2021-04-16 13:29:55.427 EDT [61886] FATAL:  database "pgmint" does not exist
+2021-04-16 13:36:09.477 EDT [62004] FATAL:  database "pgmint" does not exist
+2021-04-16 13:36:22.787 EDT [62022] FATAL:  database "pgmint" does not exist
+2021-04-16 13:38:48.386 EDT [62048] FATAL:  database "pgmint" does not exist
+2021-04-16 15:00:38.782 EDT [62771] ERROR:  syntax error at end of input at character 18
+2021-04-16 15:00:38.782 EDT [62771] STATEMENT:  CREATE table temp
+2021-04-16 15:01:35.209 EDT [62804] ERROR:  relation "temp" does not exist at character 15
+2021-04-16 15:01:35.209 EDT [62804] STATEMENT:  select * from temp
+	;
+2021-04-16 15:06:23.057 EDT [62857] ERROR:  syntax error at end of input at character 18
+2021-04-16 15:06:23.057 EDT [62857] STATEMENT:  CREATE table temp
+2021-04-16 15:07:01.994 EDT [62857] ERROR:  syntax error at or near ";" at character 18
+2021-04-16 15:07:01.994 EDT [62857] STATEMENT:  CREATE table temp;
+2021-04-16 15:07:29.641 EDT [62857] ERROR:  syntax error at end of input at character 18
+2021-04-16 15:07:29.641 EDT [62857] STATEMENT:  CREATE table temp
+2021-04-16 15:08:52.422 EDT [62916] ERROR:  syntax error at end of input at character 18
+2021-04-16 15:08:52.422 EDT [62916] STATEMENT:  CREATE table temp
+2021-04-16 15:10:17.801 EDT [62947] ERROR:  syntax error at end of input at character 18
+2021-04-16 15:10:17.801 EDT [62947] STATEMENT:  CREATE table temp
+2021-04-16 15:11:35.443 EDT [62977] ERROR:  syntax error at or near ";" at character 18
+2021-04-16 15:11:35.443 EDT [62977] STATEMENT:  CREATE table temp;
+2021-04-16 15:12:17.760 EDT [63004] ERROR:  syntax error at end of input at character 18
+2021-04-16 15:12:17.760 EDT [63004] STATEMENT:  CREATE table temp
+2021-04-16 15:15:37.077 EDT [62804] ERROR:  syntax error at or near ";" at character 19
+2021-04-16 15:15:37.077 EDT [62804] STATEMENT:  CREATE TABLE temp
+	;
+2021-04-16 15:15:41.988 EDT [62804] ERROR:  syntax error at or near ";" at character 18
+2021-04-16 15:15:41.988 EDT [62804] STATEMENT:  CREATE TABLE temp;
+2021-04-16 18:06:05.015 EDT [63691] ERROR:  relation "m" does not exist at character 13
+2021-04-16 18:06:05.015 EDT [63691] STATEMENT:  INSERT INTO m Values("sss"),("lll")
+2021-04-16 18:06:16.475 EDT [63691] ERROR:  column "sss" does not exist at character 22
+2021-04-16 18:06:16.475 EDT [63691] STATEMENT:  INSERT INTO x Values("sss"),("lll")
+2021-04-16 18:06:37.232 EDT [63691] ERROR:  column "sss" does not exist at character 22
+2021-04-16 18:06:37.232 EDT [63691] STATEMENT:  INSERT INTO x Values(sss),(lll)
+2021-04-16 18:07:22.014 EDT [63691] ERROR:  column "a" does not exist at character 22
+2021-04-16 18:07:22.014 EDT [63691] STATEMENT:  INSERT INTO x Values(a),(b)
+2021-04-16 18:08:18.340 EDT [63691] ERROR:  column "a" does not exist at character 22
+2021-04-16 18:08:18.340 EDT [63691] STATEMENT:  INSERT INTO x Values(a),(b)
+2021-04-16 18:08:34.201 EDT [63070] ERROR:  column "a" does not exist at character 22
+2021-04-16 18:08:34.201 EDT [63070] STATEMENT:  insert into x values("a");
+2021-04-16 18:08:40.504 EDT [63070] ERROR:  column "a" does not exist at character 23
+2021-04-16 18:08:40.504 EDT [63070] STATEMENT:  insert into x values ("a");
+2021-04-16 18:09:16.737 EDT [63070] ERROR:  column "a" does not exist at character 23
+2021-04-16 18:09:16.737 EDT [63070] STATEMENT:  insert into x values (a);
+2021-04-16 18:09:20.512 EDT [63070] ERROR:  syntax error at or near "a" at character 22
+2021-04-16 18:09:20.512 EDT [63070] STATEMENT:  insert into x values a;
+2021-04-16 18:09:34.105 EDT [63070] ERROR:  syntax error at or near "a" at character 8
+2021-04-16 18:09:34.105 EDT [63070] STATEMENT:  insert a into x where m is nULL;
+2021-04-16 18:09:40.867 EDT [63070] ERROR:  syntax error at or near ""a"" at character 8
+2021-04-16 18:09:40.867 EDT [63070] STATEMENT:  insert "a" into x where m is nULL;
+2021-04-16 18:09:48.215 EDT [63070] ERROR:  malformed array literal: "a" at character 23
+2021-04-16 18:09:48.215 EDT [63070] DETAIL:  Array value must start with "{" or dimension information.
+2021-04-16 18:09:48.215 EDT [63070] STATEMENT:  insert into x values ('a');
+2021-04-16 18:09:53.691 EDT [63070] ERROR:  malformed array literal: "a" at character 22
+2021-04-16 18:09:53.691 EDT [63070] DETAIL:  Array value must start with "{" or dimension information.
+2021-04-16 18:09:53.691 EDT [63070] STATEMENT:  insert into x values('a');
+2021-04-16 21:17:05.874 EDT [63974] ERROR:  column "abc" does not exist at character 8
+2021-04-16 21:17:05.874 EDT [63974] STATEMENT:  SELECT abc
+2021-04-16 22:21:50.135 EDT [63974] ERROR:  duplicate key value violates unique constraint "temp_pkey"
+2021-04-16 22:21:50.135 EDT [63974] DETAIL:  Key (i)=(1) already exists.
+2021-04-16 22:21:50.135 EDT [63974] STATEMENT:  insert into temp values (1)
+2021-04-16 22:48:36.303 EDT [64601] ERROR:  relation "tmp" does not exist at character 15
+2021-04-16 22:48:36.303 EDT [64601] STATEMENT:  select * from tmp
+2021-04-17 16:37:32.535 EDT [63070] ERROR:  syntax error at or near "." at character 22
+2021-04-17 16:37:32.535 EDT [63070] STATEMENT:  CREATE INDEX bookings.memid_facid ON cd.bookings USING btree (memid, facid);
+2021-04-17 16:37:43.681 EDT [63070] ERROR:  schema "cd" does not exist
+2021-04-17 16:37:43.681 EDT [63070] STATEMENT:  CREATE INDEX "bookings.memid_facid" ON cd.bookings USING btree (memid, facid);
+2021-04-17 16:38:49.898 EDT [63070] ERROR:  syntax error at or near "'bookings.memid_facid'" at character 14
+2021-04-17 16:38:49.898 EDT [63070] STATEMENT:  CREATE INDEX 'bookings.memid_facid' ON cd.bookings USING btree (memid, facid);
+2021-04-17 17:06:04.653 EDT [65616] ERROR:  relation "facilties" does not exist at character 15
+2021-04-17 17:06:04.653 EDT [65616] STATEMENT:  SELECT * from facilties
