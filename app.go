@@ -138,9 +138,10 @@ func (app *PGMint) Query(req abcitypes.RequestQuery) (res abcitypes.ResponseQuer
     panic(err)
   }
 
-  // Make a slice for the values
+  // Fetch all values, make splits
   values := make([]interface{}, len(colNames))
   scanArgs := make([]interface{}, len(values))
+
   for i := range values {
     scanArgs[i] = &values[i]
 
@@ -159,6 +160,7 @@ func (app *PGMint) Query(req abcitypes.RequestQuery) (res abcitypes.ResponseQuer
     }
 
     for i, value := range values {
+      // exclude columns that occur multiple times due to a join
       _, ex := s_ind[i]
       if ex == false {
         continue

@@ -11,16 +11,30 @@ print('Enter a PSQL query.')
 
 port = '26657'
 host = 'localhost'
+dbhost = 'localhost'
+dbport = '5432'
 
+stmt = ""
+txn_flag = 0
 while True:
-    stmt = input('> ')
-    if stmt == "":
+    tmp_stmt = input('> ')
+    if tmp_stmt == "":
+        stmt += " "
         continue
 
-    cmd, *args = shlex.split(stmt)
+    stmt += tmp_stmt
+    if tmp_stmt.find(";") == -1:
+        continue
+
+    stmt = stmt[0:(stmt.rfind(";"))]
+
+    
     qstr = "curl -s \'" + host + ":" + port + "/"
-    stmt = stmt.replace(";", "")
     stmt = stmt.replace("\"", "\\\"")
+    stmt = stmt.replace("\n", " ")
+    stmt = " ".join(stmt.split())
+    stmt = stmt.strip()
+    cmd, *args = shlex.split(stmt)
 
     if cmd.upper()=='EXIT':
         break
@@ -28,6 +42,18 @@ while True:
     elif cmd.upper()=='HELP':
         # ...
         print('Enter a PSQL query.')
+
+    elif cmd.upper() == 'BEGIN':
+        # start txn block
+        txn_flag = 1
+        # do not reset query buffer
+
+
+    elif stmt[0] == "\\":
+        # metacommand
+        # make a psql call using psql -E
+        # TODO
+        print('Metacommands currently unsupported.')
 
     elif cmd.upper()=='INFO':
         output = os.system("curl -s \'" + host + ":" + port + "/abci_info\'")
@@ -81,4 +107,6 @@ while True:
 
     else:
         print('Unknown command: {}'.format(cmd))
+
+    stmt = ""
 
