@@ -7,6 +7,8 @@ import (
  "os/signal"
  "path/filepath"
  "syscall"
+ "io/ioutil"
+ "encoding/json"
 
  "database/sql"
  _ "github.com/lib/pq"
@@ -24,29 +26,40 @@ import (
 
 var configFile string
 
-const (
-  host     = "localhost"
-  port     = 5432
-)
-
 func init() {
  flag.StringVar(&configFile, "config", "$HOME/.tendermint/config/config.toml", "Path to config.toml")
 }
 
 func main() {
- psqlInfo := fmt.Sprintf("host=%s port=%d "+
+ // Read config file for DB constants
+  f, ferr := ioutil.ReadFile("netconf.json")
+  if ferr != nil {
+    panic(ferr)
+  }
+
+  var result map[string]interface{}
+  ferr = json.Unmarshal(f, &result)
+  if ferr != nil {
+    panic(ferr)
+  }
+
+  host := result["dbhost"]
+  port := result["dbport"]
+
+
+  psqlInfo := fmt.Sprintf("host=%s port=%s "+
     "dbname=pgmint sslmode=disable",
     host, port)
- db, err := sql.Open("postgres", psqlInfo) // try seeing if pgmint exists
- if err != nil {
-  fmt.Fprintf(os.Stderr, "failed to open postgres db: %v", err)
-  os.Exit(1)
- }
+  db, err := sql.Open("postgres", psqlInfo) // try seeing if pgmint exists
+  if err != nil {
+    fmt.Fprintf(os.Stderr, "failed to open postgres db: %v", err)
+    os.Exit(1)
+  }
 
- err = db.Ping()
- if err != nil {
+  err = db.Ping()
+  if err != nil {
   // try connecting to default pg db and creating pgmint
-  psqlInfo = fmt.Sprintf("host=%s port=%d "+
+  psqlInfo = fmt.Sprintf("host=%s port=%s "+
     "dbname=postgres sslmode=disable",
     host, port)
 
@@ -64,45 +77,41 @@ func main() {
   }
 
   db.Close()
- }
+  }
 
 
- psqlInfo = fmt.Sprintf("host=%s port=%d "+
+  psqlInfo = fmt.Sprintf("host=%s port=%s "+
     "dbname=pgmint sslmode=disable",
     host, port)
- db, err = sql.Open("postgres", psqlInfo)
- err = db.Ping()
- if err != nil {
+  db, err = sql.Open("postgres", psqlInfo)
+  err = db.Ping()
+  if err != nil {
     fmt.Fprintf(os.Stderr, "failed to open postgres db: %v", err)
     os.Exit(1)
- }
+  }
 
+  defer db.Close()
 
+  app := NewPGMint(db)
 
- defer db.Close()
+  flag.Parse()
 
+  node, err := newTendermint(app, configFile)
+  if err != nil {
+    fmt.Fprintf(os.Stderr, "%v", err)
+    os.Exit(2)
+  }
 
+  node.Start()
+  defer func() {
+    node.Stop()
+    node.Wait()
+  }()
 
- app := NewPGMint(db)
-
- flag.Parse()
-
- node, err := newTendermint(app, configFile)
- if err != nil {
-  fmt.Fprintf(os.Stderr, "%v", err)
-  os.Exit(2)
- }
-
- node.Start()
- defer func() {
-  node.Stop()
-  node.Wait()
- }()
-
- c := make(chan os.Signal, 1)
- signal.Notify(c, os.Interrupt, syscall.SIGTERM)
- <-c
- os.Exit(0)
+  c := make(chan os.Signal, 1)
+  signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+  <-c
+  os.Exit(0)
 }
 
 func newTendermint(app abci.Application, configFile string) (*nm.Node, error) {
