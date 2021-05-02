@@ -11,6 +11,7 @@ import (
  "encoding/json"
  "strings"
  "strconv"
+ "context"
 )
 
 type Statement []byte
@@ -66,32 +67,113 @@ func (app *PGMint) Info(req abcitypes.RequestInfo) abcitypes.ResponseInfo {
 func (app *PGMint) DeliverTx(req abcitypes.RequestDeliverTx) abcitypes.ResponseDeliverTx {
   val := strings.Replace(string(req.Tx), "\\\"", "\"", -1)
 
-  _, err := app.db.Exec(val)
-  if err != nil {
-    return abcitypes.ResponseDeliverTx{Code: 1, Log: err.Error() + " -- " + string(req.Tx)} // deliver failed
+  ss := strings.Split(val, ";")
+
+  output := ""
+
+  if len(ss) > 1 {
+    ctx := context.Background()
+    tx, err := app.db.BeginTx(ctx, nil)
+    output += "BEGIN, "
+    if err != nil {
+      return abcitypes.ResponseDeliverTx{Code: 1, Log: "TXN FAILURE"}
+    }
+    for _, line := range ss {
+      if strings.ToUpper(line) == "BEGIN" {
+        continue
+      }
+
+      if strings.ToUpper(line) == "END" {
+        err = tx.Commit()
+        if err != nil {
+          tx.Rollback()
+          return abcitypes.ResponseDeliverTx{Code: 1, Log: "COMMIT FAILURE"}
+        }
+        break
+      } 
+
+      _, err = tx.ExecContext(ctx, line) // Try executing the line
+      if err != nil {
+        // In case of error, rollback transaction
+        tx.Rollback()
+        output += "ROLLBACK"
+        return abcitypes.ResponseDeliverTx{Code: 1, Log: output}
+      }
+
+      words := strings.Fields(string(line))
+      stmt_type := strings.ToUpper(words[0])
+      output += stmt_type + ", "
+
+    }
+
+    app.entries = append(app.entries, Statement(req.Tx))
+    output += "COMMIT"
+    return abcitypes.ResponseDeliverTx{Code: abcitypes.CodeTypeOK, Log: output}
+  } else {
+    _, err := app.db.Exec(val)
+    if err != nil {
+      return abcitypes.ResponseDeliverTx{Code: 1, Log: err.Error() + " -- " + string(req.Tx)} // deliver failed
+    }
+
+    app.entries = append(app.entries, Statement(req.Tx))
+
+    words := strings.Fields(string(req.Tx))
+    stmt_type := strings.ToUpper(words[0])
+
+    return abcitypes.ResponseDeliverTx{Code: abcitypes.CodeTypeOK, Log: stmt_type}
   }
-
-  app.entries = append(app.entries, Statement(req.Tx))
-
-  words := strings.Fields(string(req.Tx))
-  stmt_type := strings.ToUpper(words[0])
-
-  return abcitypes.ResponseDeliverTx{Code: abcitypes.CodeTypeOK, Log: stmt_type}
 }
 
 func (app *PGMint) CheckTx(req abcitypes.RequestCheckTx) abcitypes.ResponseCheckTx {
- val := strings.Replace(string(req.Tx), "\\\"", "\"", -1)
+  val := strings.Replace(string(req.Tx), "\\\"", "\"", -1)
 
- code, err := isValid(val)
- if err != nil {
-    return abcitypes.ResponseCheckTx{Code: 1, Log: err.Error()}
- } 
+  ss := strings.Split(val, ";")
 
- if code == 1 {
-    return abcitypes.ResponseCheckTx{Code: 1, Log: "Wrong path for Read"}
- }
+  if len(ss) > 1 {
+    for index, line := range ss {
+      if strings.ToUpper(line) == "BEGIN" {
+        if index == 0 {
+          continue
+        } else {
+          return abcitypes.ResponseCheckTx{Code: 1, Log: "Mal Formatted Transaction"}
+        }
+      }
 
- return abcitypes.ResponseCheckTx{Code: abcitypes.CodeTypeOK}
+      if strings.ToUpper(line) == "END" {
+        if index != len(ss) - 1 {
+          return abcitypes.ResponseCheckTx{Code: 1, Log: "Mal Formatted Transaction"}
+        }
+        break
+      } 
+
+      if strings.ToUpper(line) == "ROLLBACK" {
+        return abcitypes.ResponseCheckTx{Code: 1, Log: "TXN Rolled Back"}
+      }
+
+      if index == len(ss) - 1 {
+        // issue!! should not get here unless txn doesnt end in commit...
+        return abcitypes.ResponseCheckTx{Code: 1, Log: "Mal Formatted Transaction"}
+      }
+
+      _, err := isValid(line)
+      if err != nil {
+        return abcitypes.ResponseCheckTx{Code: 1, Log: err.Error()}
+      }
+    }
+
+    return abcitypes.ResponseCheckTx{Code: abcitypes.CodeTypeOK}
+  } else {
+    code, err := isValid(val)
+    if err != nil {
+      return abcitypes.ResponseCheckTx{Code: 1, Log: err.Error()}
+    } 
+
+    if code == 1 {
+      return abcitypes.ResponseCheckTx{Code: 1, Log: "Wrong path for Read"}
+    }
+
+    return abcitypes.ResponseCheckTx{Code: abcitypes.CodeTypeOK}
+  }
 }
 
 
