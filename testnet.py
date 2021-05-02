@@ -24,9 +24,9 @@ def kill_pg(n_nodes):
          os.kill(int(data[1]), signal.SIGKILL)
 
 def start_nodes(n_nodes, dirname):
-   procs = []
    print("Starting Nodes...")
-   for i in range(n_nodes-1):
+   procs = []
+   for i in range(n_nodes):
       if i == 0:
          sink = dirname
       else:
@@ -40,15 +40,15 @@ def start_nodes(n_nodes, dirname):
       os.chdir(sink)
 
       # RUN node code
-      p = subprocess.Popen(['./pgmint'])
-      proces.append(p)
+      os.environ["TMHOME"] = "./tmp"
+      p = subprocess.Popen('./pgmint -config "./tmp/config/config.toml" > /dev/null 2>&1', shell = True)
+      procs.append(p)
 
       # cd back
       os.chdir(wd)
-
-   for proc in procs:
-      proc.wait()
-
+      print("NODE " + str(i) + " STARTED")
+   for p in procs:
+      p.wait()
    return
 
 
@@ -223,6 +223,7 @@ def start(n_nodes, dirname):
    data_path = dirname + "/data"
    pgdata_path = dirname + "/pgdata"
    log_path = dirname + "/logfile"
+   pgmint = dirname + "/pgmint"
 
    # cleanup existing files
    try:
@@ -244,6 +245,11 @@ def start(n_nodes, dirname):
       os.remove(log_path)
    except OSError as e:
       print("Error: %s : %s" % (log_path, e.strerror))
+
+   try:
+      os.remove(pgmint)
+   except OSError as e:
+      print("Error: %s : %s" % (pgmint, e.strerror))
 
    ## now make copies of the source directory
    netconf = {}
