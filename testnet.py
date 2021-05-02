@@ -63,6 +63,11 @@ def gen_config(n_nodes, dirname):
    # BUILD SOURCE ###
    build = ['go', 'build']
    process = Popen(build, stdout=PIPE, stderr=PIPE)
+   stdout, stderr = process.communicate()
+   for line in str(stdout.decode("utf-8")).split("\n"):
+      print(line)
+   for line in str(stderr.decode("utf-8")).split("\n"):
+      print(line)
 
    os.environ["TMHOME"] = "./tmp"
    tminit = ['tendermint', 'init', 'validator']
@@ -99,6 +104,11 @@ def tm_init(n_nodes, dirname):
       # BUILD SOURCE ###
       build = ['go', 'build']
       process = Popen(build, stdout=PIPE, stderr=PIPE)
+      stdout, stderr = process.communicate()
+      for line in str(stdout.decode("utf-8")).split("\n"):
+         print(line)
+      for line in str(stderr.decode("utf-8")).split("\n"):
+         print(line)
 
       # init validator
       os.environ["TMHOME"] = "./tmp"
@@ -140,8 +150,8 @@ def re_peer(n_nodes, dirname, persistent_peers):
 
       peers = 'persistent-peers = "'
       # fencepost
-      for i in range(len(subpersistent_peers) - 1):
-         peers = peers + str(subpersistent_peers[i]) + ","
+      for j in range(len(subpersistent_peers) - 1):
+         peers = peers + str(subpersistent_peers[j]) + ","
 
       peers = peers + subpersistent_peers[len(subpersistent_peers) - 1] + '"'
 
@@ -155,10 +165,14 @@ def re_peer(n_nodes, dirname, persistent_peers):
       conf = config.read()
       config.close()
 
-      psub = 266 + 10*i
+      psub = 266 + i
 
       conf = re.sub('266', str(psub), conf)
       conf = re.sub('persistent-peers = ""', peers, conf)
+      conf = re.sub('addr-book-strict = true', 'addr-book-strict = false', conf)
+      conf = re.sub('cors-allowed-origins = \[\]', 'cors-allowed-origins = ["*"]', conf)
+      conf = re.sub('allow-duplicate-ip = false', 'allow-duplicate-ip = true', conf)
+
 
       with open(sink+"/tmp/config/config.toml", "w") as f:
          f.write(conf)

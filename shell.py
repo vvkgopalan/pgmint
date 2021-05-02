@@ -15,7 +15,7 @@ dbhost = 'localhost' #db host
 dbport = '5432' #db port
 
 CONSISTENCY = "strong" # read consistency
-N_NODES = 1 # number of nodes in network
+N_NODES = 3 # number of nodes in network
 SRC = "src" # directory with source code
 
 ## Hacky, but first discover all validators addresses
@@ -32,7 +32,7 @@ for i in range(N_NODES):
         validator = json.load(vfile)
         addr = validator["address"]
 
-    val_map[addr] = str(26657+10*i) # Hard Coded Addr.
+    val_map[addr] = str(26657+100*i) # Hard Coded Addr.
 
 stmt = ""
 txn_flag = 0
@@ -150,9 +150,10 @@ while True:
 
         qstr = qstr.replace("%E2%80%9C", "%5C%22")
         qstr = qstr.replace("%E2%80%9D", "%5C%22")
-        #print(qstr)
+        print(qstr)
         output = os.popen(qstr).read()
         y = json.loads(str(output))
+        print(y)
         if 'error' in y:
             print(y["error"]["message"], ":", y["error"]["data"])
         else:
