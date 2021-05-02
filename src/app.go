@@ -12,6 +12,7 @@ import (
  "strings"
  "strconv"
  "context"
+ "crypto/sha1"
 )
 
 type Statement []byte
@@ -67,6 +68,20 @@ func (app *PGMint) Info(req abcitypes.RequestInfo) abcitypes.ResponseInfo {
 func (app *PGMint) DeliverTx(req abcitypes.RequestDeliverTx) abcitypes.ResponseDeliverTx {
   val := strings.Replace(string(req.Tx), "\\\"", "\"", -1)
 
+  h := sha1.Sum([]byte(req.Tx))
+  res_hash := fmt.Sprintf("%x", h)
+
+  events := []abcitypes.Event{
+    {
+      Type: "pgwrite",
+      Attributes: []abcitypes.EventAttribute{
+        abcitypes.EventAttribute{Key: []byte("sender"), Value: []byte("Tendermint"), Index: true},
+        abcitypes.EventAttribute{Key: []byte("recipient"), Value: []byte("Postgres"), Index: true},
+        abcitypes.EventAttribute{Key: []byte("tx"), Value: []byte(res_hash), Index: true},
+      },
+    },
+  }
+
   ss := strings.Split(val, ";")
 
   output := ""
@@ -108,7 +123,7 @@ func (app *PGMint) DeliverTx(req abcitypes.RequestDeliverTx) abcitypes.ResponseD
 
     app.entries = append(app.entries, Statement(req.Tx))
     output += "COMMIT"
-    return abcitypes.ResponseDeliverTx{Code: abcitypes.CodeTypeOK, Log: output}
+    return abcitypes.ResponseDeliverTx{Code: abcitypes.CodeTypeOK, Log: output, Events: events}
   } else {
     _, err := app.db.Exec(val)
     if err != nil {
@@ -120,7 +135,7 @@ func (app *PGMint) DeliverTx(req abcitypes.RequestDeliverTx) abcitypes.ResponseD
     words := strings.Fields(string(req.Tx))
     stmt_type := strings.ToUpper(words[0])
 
-    return abcitypes.ResponseDeliverTx{Code: abcitypes.CodeTypeOK, Log: stmt_type}
+    return abcitypes.ResponseDeliverTx{Code: abcitypes.CodeTypeOK, Log: stmt_type, Events: events}
   }
 }
 
@@ -280,7 +295,8 @@ func (app *PGMint) BeginBlock(req abcitypes.RequestBeginBlock) abcitypes.Respons
  return abcitypes.ResponseBeginBlock{}
 }
 
-
+// Stretch Goal - Look into Validator Updates
+// https://github.com/tendermint/tendermint/blob/master/abci/example/kvstore/persistent_kvstore.go
 func (app *PGMint) EndBlock(req abcitypes.RequestEndBlock) abcitypes.ResponseEndBlock {
  app.lastBlock = req.GetHeight()
  return abcitypes.ResponseEndBlock{}

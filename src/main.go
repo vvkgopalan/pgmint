@@ -30,6 +30,8 @@ func init() {
  flag.StringVar(&configFile, "config", "./tmp/config/config.toml", "Path to config.toml")
 }
 
+// Building on Tendermint Tutorial Code: https://github.com/tendermint/tendermint/tree/master/abci/example
+
 func main() {
  // Read config file for DB constants
   f, ferr := ioutil.ReadFile("netconf.json")

@@ -7,16 +7,50 @@ import subprocess
 import pandas as pd
 import sys
 from tabulate import tabulate
+import requests
+import time
+import hashlib
+
+from websocket import create_connection
+
+port = '26657' #tm port
+host = 'localhost' #tm host
+dbhost = 'localhost' #db host
+dbport = '5432' #db port
+
+def search_txns(txnstrs):
+    for q in txnstrs:
+        retry = 5
+        while True:
+            h = hashlib.new("sha1", q.encode())
+
+            qstr = "http://127.0.0.1:" + port + "/"
+
+            query = "\"pgwrite.tx+%3D+'" + str(h.hexdigest()) + "'\""
+            qstr += "tx_search?query=" + query + "&prove=true"
+
+            qstr = qstr.replace("%E2%80%9C", "%5C%22") # weird encoding issues
+            qstr = qstr.replace("%E2%80%9D", "%5C%22")
+
+            #print(qstr)
+            x = requests.get(qstr)
+            xj = x.json()
+
+            if int(xj["result"]["total_count"]) == 0 and retry > 0:
+                time.sleep(1)
+                print("Retrying: " + q)
+                retry = retry - 1
+            else:
+                break
+
+
+
 
 def main(argv):
-    print('Enter a PSQL query.')
-    print('USAGE: python shell.py src n_nodes consistency_level')
+    print('USAGE: python batch_sql.py src n_nodes consistency fname')
+    txnstrs = []
 
-    port = '26657' #tm port
-    host = 'localhost' #tm host
-    dbhost = 'localhost' #db host
-    dbport = '5432' #db port
-
+    SQLFILE = argv[3]
     CONSISTENCY = argv[2] # read consistency
     N_NODES = int(argv[1]) # number of nodes in network
     SRC = argv[0] # directory with source code
@@ -43,8 +77,12 @@ def main(argv):
 
     stmt = ""
     txn_flag = 0
-    while True:
-        tmp_stmt = input('> ')
+
+    sqlfile = open(SQLFILE, "r")
+    sql_stmt = sqlfile.readline()
+
+    while sql_stmt:
+        tmp_stmt = sql_stmt
         if tmp_stmt == "":
             stmt += " "
             continue
@@ -61,6 +99,8 @@ def main(argv):
             # 'end' transaction block  
             stmt = stmt[0:(stmt.rfind(";"))] # get rid of rightmost ;
 
+            raw_stmt = stmt
+
             # Convert to URI/HTTP - a REST like interface for the backend tendermint RPC
             qstr = "curl -s \'" + host + ":" + port + "/"
             stmt = stmt.replace("\n", " ")
@@ -71,27 +111,19 @@ def main(argv):
             tmp = {}
             tmp['tx'] = "\"" + stmt + "\""
             enc = urllib.parse.urlencode(tmp)
-            qstr += "broadcast_tx_commit?" + enc + "\'"
+            
+
+
+            qstr += "broadcast_tx_async?" + enc + "\'"
 
             qstr = qstr.replace("%E2%80%9C", "%5C%22") # weird encoding issues
             qstr = qstr.replace("%E2%80%9D", "%5C%22")
 
             #print(qstr)
-            output = os.popen(qstr).read()
-            #print(output)
+            output = os.popen(qstr).read() 
             y = json.loads(str(output))
-
-            if 'error' in y:
-                print(y["error"]["message"], ":", y["error"]["data"])
-            else:
-                if (int(y["result"]["check_tx"]["code"]) != 0):
-                    print("Check TX Log: ", y["result"]["check_tx"]["log"])
-                
-                if (int(y["result"]["deliver_tx"]["code"]) != 0):
-                    print("Deliver TX Log: ", y["result"]["deliver_tx"]["log"])
-                else:
-                    print(y["result"]["deliver_tx"]["log"])
-
+            if not 'error' in y:
+                txnstrs.append(raw_stmt) # store txn string to lookup later
 
             # reset txn flag
             txn_flag = 0
@@ -104,6 +136,8 @@ def main(argv):
 
         ## Single statement processing...
         stmt = stmt[0:(stmt.rfind(";"))]
+
+        raw_stmt = stmt
         
         qstr = "curl -s \'" + host + ":" + port + "/"
         stmt = stmt.replace("\n", " ")
@@ -111,25 +145,7 @@ def main(argv):
         stmt = stmt.strip()
         cmd, *args = shlex.split(stmt)
 
-        if cmd.upper()=='EXIT':
-            break
-
-        elif cmd.upper()=='HELP':
-            # ...
-            print('Enter a PSQL query.')
-
-
-        elif stmt[0] == "\\":
-            # metacommand
-            # make a psql call using psql -E
-            # TODO
-            print('Metacommands currently unsupported.')
-
-        elif cmd.upper()=='INFO':
-            output = os.popen("curl -s \'" + host + ":" + port + "/abci_info\'").read()
-            print(output)
-
-        elif cmd.upper()=='SELECT':
+        if cmd.upper()=='SELECT':
             if CONSISTENCY == "strong":
                 # need to do a quorum read or read from proposer of latest block
                 # can use the /validators endpoint
@@ -174,35 +190,34 @@ def main(argv):
             tmp = {}
             tmp['tx'] = "\"" + stmt + "\""
             enc = urllib.parse.urlencode(tmp)
-            qstr += "broadcast_tx_commit?" + enc + "\'"
+            
+            qstr += "broadcast_tx_async?" + enc + "\'"
 
             qstr = qstr.replace("%E2%80%9C", "%5C%22")
             qstr = qstr.replace("%E2%80%9D", "%5C%22")
 
             #print(qstr)
+            # async req
             output = os.popen(qstr).read()
-            #print(output)
             y = json.loads(str(output))
-
-            if 'error' in y:
-                print(y["error"]["message"], ":", y["error"]["data"])
-            else:
-                if (int(y["result"]["check_tx"]["code"]) != 0):
-                    print("Check TX Log: ", y["result"]["check_tx"]["log"])
-                
-                if (int(y["result"]["deliver_tx"]["code"]) != 0):
-                    print("Deliver TX Log: ", y["result"]["deliver_tx"]["log"])
-                else:
-                    print(y["result"]["deliver_tx"]["log"])
+            if not 'error' in y:
+                txnstrs.append(raw_stmt)
 
 
         else:
             print('Unknown command: {}'.format(cmd))
 
         stmt = ""
+        sql_stmt = sqlfile.readline()
 
+    sqlfile.close()
+
+    search_txns(txnstrs)
     return
 
 if __name__ == "__main__":
-   main(sys.argv[1:])
+    start = time.perf_counter()
+    main(sys.argv[1:])
+    end = time.perf_counter()
+    print("Timing with " + argv[1] + " nodes: " + str(end-start) + " seconds.")
 

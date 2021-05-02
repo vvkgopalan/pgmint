@@ -341,10 +341,12 @@ def start(n_nodes, dirname):
    genesis["validators"] = genesis_validators
 
    # fix all peers genesis.json
-   re_genesis(n_nodes, dirname, genesis)
+   if n_nodes > 1:
+      re_genesis(n_nodes, dirname, genesis)
 
    # fix all peers ports
-   re_peer(n_nodes, dirname, persistent_peers)
+   if n_nodes > 1:
+      re_peer(n_nodes, dirname, persistent_peers)
 
    start_nodes(n_nodes, dirname)
 
