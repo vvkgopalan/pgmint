@@ -23,15 +23,48 @@ def kill_pg(n_nodes):
 
          os.kill(int(data[1]), signal.SIGKILL)
 
+def start_nodes(n_nodes, dirname):
+   procs = []
+   print("Starting Nodes...")
+   for i in range(n_nodes-1):
+      if i == 0:
+         sink = dirname
+      else:
+         sink = dirname + str(i)
+
+      process = Popen(["pwd"], stdout=PIPE, stderr=PIPE)
+      stdout, stderr = process.communicate()
+      wd = str(stdout.decode("utf-8").split("\n")[0])
+
+      # cd into dir
+      os.chdir(sink)
+
+      # RUN node code
+      p = subprocess.Popen(['./pgmint'])
+      proces.append(p)
+
+      # cd back
+      os.chdir(wd)
+
+   for proc in procs:
+      proc.wait()
+
+   return
+
+
 def gen_config(n_nodes, dirname):
    process = Popen(["pwd"], stdout=PIPE, stderr=PIPE)
    stdout, stderr = process.communicate()
-   wd = str(stdout.decode("utf-8"))
+   wd = str(stdout.decode("utf-8").split("\n")[0])
 
    # cd into dir
-   process = Popen(["cd", dirname], stdout=PIPE, stderr=PIPE)
-   stdout, stderr = process.communicate()
-   os.environ["TMHOME"] = "./" + dirname + "/tmp"
+   os.chdir(dirname)
+
+   # BUILD SOURCE ###
+   build = ['go', 'build']
+   process = Popen(build, stdout=PIPE, stderr=PIPE)
+
+   os.environ["TMHOME"] = "./tmp"
    tminit = ['tendermint', 'init', 'validator']
    process = Popen(tminit, stdout=PIPE, stderr=PIPE)
    stdout, stderr = process.communicate()
@@ -46,11 +79,89 @@ def gen_config(n_nodes, dirname):
       node_key = json.load(nfile)
 
    # cd back
-   process = Popen(["cd", wd], stdout=PIPE, stderr=PIPE)
-   stdout, stderr = process.communicate()
+   os.chdir(wd)
 
    return genesis, validator, node_key
 
+def tm_init(n_nodes, dirname):
+   validators = []
+   node_keys = []
+   for i in range(n_nodes-1):
+      sink = dirname + str(i+1)
+
+      process = Popen(["pwd"], stdout=PIPE, stderr=PIPE)
+      stdout, stderr = process.communicate()
+      wd = str(stdout.decode("utf-8").split("\n")[0])
+
+      # cd into dir
+      os.chdir(sink)
+
+      # BUILD SOURCE ###
+      build = ['go', 'build']
+      process = Popen(build, stdout=PIPE, stderr=PIPE)
+
+      # init validator
+      os.environ["TMHOME"] = "./tmp"
+      tminit = ['tendermint', 'init', 'validator']
+      process = Popen(tminit, stdout=PIPE, stderr=PIPE)
+      stdout, stderr = process.communicate()
+      for line in str(stdout.decode("utf-8")).split("\n"):
+         print(line)
+
+      with open("tmp/config/priv_validator_key.json") as vfile:
+         validator = json.load(vfile)
+      with open("tmp/config/node_key.json") as nfile:
+         node_key = json.load(nfile)
+
+      validators.append(validator)
+      node_keys.append(node_key)
+
+      # cd back
+      os.chdir(wd)
+
+   return validators, node_keys
+
+def re_genesis(n_nodes, dirname, genesis):
+   sink = dirname + "/tmp/config/genesis.json"
+   with open(sink, 'w') as f:
+      json.dump(genesis, f)
+
+   for i in range(n_nodes-1):
+      sink = dirname + str(i+1)
+      sink = sink + "/tmp/config/genesis.json"
+      with open(sink, 'w') as f:
+         json.dump(genesis, f)
+
+def re_peer(n_nodes, dirname, persistent_peers):
+
+   for i in range(n_nodes):
+
+      subpersistent_peers = persistent_peers[:i] + persistent_peers[i+1:]
+
+      peers = 'persistent-peers = "'
+      # fencepost
+      for i in range(len(subpersistent_peers) - 1):
+         peers = peers + str(subpersistent_peers[i]) + ","
+
+      peers = peers + subpersistent_peers[len(subpersistent_peers) - 1] + '"'
+
+
+      if i == 0:
+         sink = dirname
+      else:
+         sink = dirname + str(i)
+
+      config = open(sink+"/tmp/config/config.toml")
+      conf = config.read()
+      config.close()
+
+      psub = 266 + 10*i
+
+      conf = re.sub('266', str(psub), conf)
+      conf = re.sub('persistent-peers = ""', peers, conf)
+
+      with open(sink+"/tmp/config/config.toml", "w") as f:
+         f.write(conf)
 
 
 
@@ -65,6 +176,7 @@ def destroy(n_nodes, dirname):
    data_path = dirname + "/data"
    pgdata_path = dirname + "/pgdata"
    log_path = dirname + "/logfile"
+   pgmint = dirname + "/pgmint"
 
    # cleanup existing files
    try:
@@ -86,6 +198,11 @@ def destroy(n_nodes, dirname):
       os.remove(log_path)
    except OSError as e:
       print("Error: %s : %s" % (log_path, e.strerror))
+
+   try:
+      os.remove(pgmint)
+   except OSError as e:
+      print("Error: %s : %s" % (pgmint, e.strerror))
 
    for i in range(n_nodes - 1):
       sink = dirname + str(i+1)
@@ -173,7 +290,10 @@ def start(n_nodes, dirname):
          return
 
       pnum = str(5432 - i)
-      logpath = dirname + "/logfile"
+      if i == 0:
+         logpath = dirname + "/logfile"
+      else:
+         logpath = dirname + str(i) + "/logfile"
       command = ['pg_ctl', '-D', sink, '-o', '-p "' + pnum + '"', '-l', logpath, 'start']
       process = Popen(command, stdout=subprocess.PIPE)
       output, error = process.communicate()
@@ -183,10 +303,30 @@ def start(n_nodes, dirname):
 
    genesis, validator, node_key = gen_config(n_nodes, dirname)
 
+   persistent_peers = [str(node_key["id"]) + "@0.0.0.0:26656"]
 
-   #tm_init(n_nodes, dirname)
+   validators, node_keys = tm_init(n_nodes, dirname)
+   for i, node in enumerate(node_keys):
+      persistent_peers.append(str(node["id"])+"@0.0.0.0:" + str((i+1)*100+26656))
 
-   #start_nodes(n_nodes, dirname)
+   genesis_validators = genesis["validators"]
+   for validator in validators:
+      tmp_val = {}
+      tmp_val["address"] = validator["address"]
+      tmp_val["pub_key"] = validator["pub_key"]
+      tmp_val["power"] = "10"
+      tmp_val["name"] = ""
+      genesis_validators.append(tmp_val)
+
+   genesis["validators"] = genesis_validators
+
+   # fix all peers genesis.json
+   re_genesis(n_nodes, dirname, genesis)
+
+   # fix all peers ports
+   re_peer(n_nodes, dirname, persistent_peers)
+
+   start_nodes(n_nodes, dirname)
 
 
 

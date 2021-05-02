@@ -27,7 +27,7 @@ import (
 var configFile string
 
 func init() {
- flag.StringVar(&configFile, "config", "$HOME/.tendermint/config/config.toml", "Path to config.toml")
+ flag.StringVar(&configFile, "config", "./tmp/config/config.toml", "Path to config.toml")
 }
 
 func main() {
