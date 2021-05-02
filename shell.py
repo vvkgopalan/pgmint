@@ -69,9 +69,9 @@ while True:
         qstr = qstr.replace("%E2%80%9C", "%5C%22") # weird encoding issues
         qstr = qstr.replace("%E2%80%9D", "%5C%22")
 
-        print(qstr)
+        #print(qstr)
         output = os.popen(qstr).read()
-        print(output)
+        #print(output)
         y = json.loads(str(output))
 
         if 'error' in y:
@@ -140,7 +140,7 @@ while True:
                     proposer = validator["address"]
 
             proposer_port = val_map[proposer]
-            print(proposer_port)
+            #print(proposer_port)
             qstr = "curl -s \'" + host + ":" + proposer_port + "/"
 
         tmp = {}
@@ -150,10 +150,10 @@ while True:
 
         qstr = qstr.replace("%E2%80%9C", "%5C%22")
         qstr = qstr.replace("%E2%80%9D", "%5C%22")
-        print(qstr)
+        #print(qstr)
         output = os.popen(qstr).read()
         y = json.loads(str(output))
-        print(y)
+        #print(y)
         if 'error' in y:
             print(y["error"]["message"], ":", y["error"]["data"])
         else:
@@ -173,9 +173,9 @@ while True:
         qstr = qstr.replace("%E2%80%9C", "%5C%22")
         qstr = qstr.replace("%E2%80%9D", "%5C%22")
 
-        print(qstr)
+        #print(qstr)
         output = os.popen(qstr).read()
-        print(output)
+        #print(output)
         y = json.loads(str(output))
 
         if 'error' in y:
