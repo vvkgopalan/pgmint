@@ -140,6 +140,7 @@ while True:
                     proposer = validator["address"]
 
             proposer_port = val_map[proposer]
+            print(proposer_port)
             qstr = "curl -s \'" + host + ":" + proposer_port + "/"
 
         tmp = {}
