@@ -11,8 +11,7 @@ To run a local node, perform the following:
   
 
 To interact with the node directly, please follow the Tendermint RPC reference. For convenience, I have written a shell that behaves very similar to `psql` that abstracts away the underlying `broadcast_tx_*` and `abci_*` JSON-RPC API calls. Here, you can type native Postgres queries and have them propagated to the Tendermint node for validation and execution. To run this shell, run the following command: 
-- `python shell.py <src> <n_nodes> <consistency_level>`
-In this command, `src` refers to the relative path to your ABCI application source directory, `n_nodes` refers to the number of nodes currently running, and `consistency_level` refers to the tunable read consistency level (one of `{“strong” | “eventual”}`). 
+- `python shell.py <src> <n_nodes> <consistency_level>`. In this command, `src` refers to the relative path to your ABCI application source directory, `n_nodes` refers to the number of nodes currently running, and `consistency_level` refers to the tunable read consistency level (one of `{“strong” | “eventual”}`). 
   
 
 To create local networks for testing purposes, I have developed a automated testnet generator that proceeds through the following workflow:
