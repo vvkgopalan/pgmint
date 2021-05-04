@@ -20,7 +20,7 @@ dbport = '5432' #db port
 
 def search_txns(txnstrs):
     for q in txnstrs:
-        retry = 5
+        retry = 50
         while True:
             h = hashlib.new("sha1", q.encode())
 
@@ -37,7 +37,7 @@ def search_txns(txnstrs):
             xj = x.json()
 
             if int(xj["result"]["total_count"]) == 0 and retry > 0:
-                time.sleep(1)
+                time.sleep(.1)
                 print("Retrying: " + q)
                 retry = retry - 1
             else:
@@ -219,5 +219,5 @@ if __name__ == "__main__":
     start = time.perf_counter()
     main(sys.argv[1:])
     end = time.perf_counter()
-    print("Timing with " + argv[1] + " nodes: " + str(end-start) + " seconds.")
+    print("Timing with " + sys.argv[2] + " nodes: " + str(end-start) + " seconds.")
 
